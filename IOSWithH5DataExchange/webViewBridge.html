@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+    <style type="text/css">
+        html { font-family:Helvetica; color:#222; }
+        h1 { color:steelblue; font-size:24px; margin-top:24px; }
+        button { margin:0 3px 10px; font-size:12px; }
+        .logLine { border-bottom:1px solid #ccc; padding:4px 2px; font-family:courier; font-size:11px; }
+    </style>
+</head>
+<body>
+<h1>WebViewJavascriptBridge Demo</h1>
+<script>
+    window.onerror = function(err) {
+        log('window.onerror: ' + err)
+    };
+
+    function setupWebViewJavascriptBridge(callback) {
+
+<!--        alert('function setupWebViewJava + callback == ' + callback);-->
+
+        if (window.WebViewJavascriptBridge) { return callback(WebViewJavascriptBridge); }
+        if (window.WVJBCallbacks) { return window.WVJBCallbacks.push(callback); }
+        
+        window.WVJBCallbacks = [callback];
+<!--        return ;-->
+        var WVJBIframe = document.createElement('iframe');
+        WVJBIframe.style.display = 'none';
+        WVJBIframe.src = 'wvjbscheme://__BRIDGE_LOADED__';
+        document.documentElement.appendChild(WVJBIframe);
+        setTimeout(function() { document.documentElement.removeChild(WVJBIframe) }, 0)
+    }
+
+    setupWebViewJavascriptBridge(function(bridge) {
+<!--        alert("setupWebViewJavascriptBridge  + bridge = " + bridge);-->
+        var uniqueId = 1;
+                                 
+<!-- 这里是在界面显示的内容，如果感觉有点乱，可以注释掉 -->
+        function log(message, data) {
+            var log = document.getElementById('log');
+            var el = document.createElement('div');
+            el.className = 'logLine';
+            el.innerHTML = uniqueId++ + '. ' + message + ':<br/>' + JSON.stringify(data);
+            if (log.children.length) { log.insertBefore(el, log.children[0]) }
+            else { log.appendChild(el) }
+        }
+
+        bridge.registerHandler('testJavascriptHandler', function(data, responseCallback) {
+                               
+<!--        alert('这里是从IOS中返回的数据内容为: data.iosPassData==' + data.iosPassData);-->
+            log('这里是从IOS中返回的数据内容为:', data);
+            var responseData = { 'jsPassData':'这里可以设置JS返回给IOS的数据__【JS中数据】😂' };
+            log('JS返回给IOS的数据内容:', responseData);
+            responseCallback(responseData)
+        });
+
+        document.body.appendChild(document.createElement('br'));
+
+        var callbackButton = document.getElementById('buttons').appendChild(document.createElement('button'));
+        callbackButton.innerHTML = 'Fire testObjcCallback';
+        callbackButton.onclick = function(e) {
+            alert('callbackButton.onclick  + e==' + e);
+<!--        return;-->
+            e.preventDefault();
+                                 
+            log('JS与IOS交互的协调过的方法 "testObjcCallback"');
+                                 
+            bridge.callHandler('testObjcCallback', {'jsPassIOS': '当触发js中的事件回到IOS中的数据，可以在这里设置__【JS中数据】😊'}, function(response) {
+            log('JS中传递给IOS的数据内容:', response);
+                               
+            })
+        }
+    })
+</script>
+<div id='buttons'></div> <div id='log'></div>
+
+
+</body>
+</html>
